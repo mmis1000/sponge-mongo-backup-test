@@ -1,0 +1,104 @@
+buildscript {
+    ext.kotlin_version = '1.3.11'
+    ext.sponge_version = "7.1.0-SNAPSHOT"
+    ext.Coroutines_version = "1.1.0"
+
+    repositories {
+        mavenCentral()
+        maven {
+            name = 'sponge'
+            url = 'https://repo.spongepowered.org/maven'
+        }
+        maven { url = "http://files.minecraftforge.net/maven" }
+    }
+
+    dependencies {
+        classpath 'org.spongepowered:mixingradle:0.6-SNAPSHOT'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
+    }
+}
+
+plugins {
+    id 'java'
+    id "idea"
+    id "signing"
+    id 'org.spongepowered.plugin' version '0.8.1'
+    id "com.github.johnrengelman.shadow" version "2.0.4"
+}
+
+apply plugin: 'net.minecraftforge.gradle.forge'
+// apply plugin: 'org.spongepowered.mixin'
+apply plugin: 'kotlin'
+
+group = pluginGroup
+version = pluginVersion
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'sponge'
+        url = 'http://repo.spongepowered.org/maven'
+    }
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$Coroutines_version"
+
+    compile 'org.spongepowered:spongeapi:7.1.0-SNAPSHOT'
+    compile 'org.spongepowered:spongecommon:7.1.0:dev'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    compile 'org.mongodb:mongodb-driver:3.8.1'
+    compile 'org.mongodb:mongodb-driver-async:3.8.1'
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+
+extractAnnotationsJar.enabled = false
+
+minecraft {
+    version = "1.12.2-14.23.4.2736"
+    mappings = "snapshot_20180808"
+    makeObfSourceJar = false
+}
+
+shadowJar {
+    classifier = null
+    exclude "dummyThing"
+    exclude "META-INF/fml_*"
+
+    dependencies {
+        include dependency("org.jetbrains.kotlin:")
+        include dependency("org.jetbrains.kotlinx:")
+        include dependency("org.mongodb:")
+    }
+
+    relocate "kotlin", "testmongo.relocate.kotlin"
+    relocate "kotlinx", "testmongo.relocate.kotlinx"
+    relocate "com.mongodb", "testmongo.relocate.com.mongodb"
+}
+
+signing {
+    required {signing.hasProperty('keyId')}
+    sign configurations.archives
+}
+
+jar {
+    manifest.attributes(
+            "FMLAT": "testmongo_at.cfg"
+    )
+}
+
+jar.dependsOn(shadowJar)
+jar.enabled = false
+
+sponge.plugin.id = pluginId
